@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/drap-sync", "schedule": "0 2 1 * *" },
+    { "path": "/api/cron/expiry-alerts", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/low-stock-digest", "schedule": "0 9 * * 1" }
+  ]
+}
