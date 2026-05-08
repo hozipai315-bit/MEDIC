@@ -45,7 +45,7 @@ export default function POSScreen({
   const [discount, setDiscount] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'easypaisa' | 'jazzcash'>('cash')
   const [loading, setLoading] = useState(false)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [successInvoice, setSuccessInvoice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const searchMedicines = useCallback(async (query: string) => {
@@ -64,7 +64,6 @@ export default function POSScreen({
         medicines (name, strength, form)
       `)
       .eq('tenant_id', tenantId)
-      .gt('stock_qty', 0)
       .ilike('medicines.name', `%${query}%`)
       .limit(8)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,9 +76,14 @@ export default function POSScreen({
   }, [search, searchMedicines])
 
   function addToCart(medicine: Medicine) {
+    if (medicine.stock_qty === 0) {
+      const override = window.confirm(
+        `${medicine.medicines.name} out of stock hai. Kya phir bhi add karna chahte hain?`
+      )
+      if (!override) return
+    }
     const existing = cart.find(item => item.inventoryId === medicine.id)
     if (existing) {
-      if (existing.quantity >= medicine.stock_qty) return
       setCart(cart.map(item =>
         item.inventoryId === medicine.id
           ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * item.unitPrice }
@@ -101,7 +105,7 @@ export default function POSScreen({
 
   function increaseQty(id: string) {
     setCart(cart.map(item =>
-      item.inventoryId === id && item.quantity < item.maxStock
+      item.inventoryId === id
         ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * item.unitPrice }
         : item
     ))
@@ -126,6 +130,7 @@ export default function POSScreen({
     if (cart.length === 0) return
     setLoading(true)
     setError(null)
+    setSuccessInvoice(null)
     const result = await createSale({
       tenantId,
       userId,
@@ -138,7 +143,7 @@ export default function POSScreen({
     if (result.error) {
       setError(result.error)
     } else {
-      setSuccessMessage(`Sale complete! Invoice: ${result.invoiceNumber}`)
+      setSuccessInvoice(result.invoiceNumber ?? null)
       setCart([])
       setDiscount(0)
     }
@@ -255,7 +260,16 @@ export default function POSScreen({
         </div>
 
         {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-        {successMessage && <p className="text-sm text-green-600 mb-2">{successMessage}</p>}
+        {successInvoice && (
+          <div className="mb-4 text-center">
+            <button
+              onClick={() => window.print()}
+              className="text-green-600 underline text-sm font-medium"
+            >
+              ✅ Sale complete! Invoice: {successInvoice} — Print karein
+            </button>
+          </div>
+        )}
 
         <Button
           className="w-full"
