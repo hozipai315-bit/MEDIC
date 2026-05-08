@@ -96,6 +96,31 @@ export async function POST(request: NextRequest) {
             .eq('id', userId)
         }
       }
+
+      // Send Welcome Email via Resend
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM,
+          to: email,
+          subject: 'Welcome to MedPOS! Your store is ready',
+          html: `
+            <h1>Welcome to MedPOS!</h1>
+            <p>Your store is ready. Here are your details:</p>
+            <ul>
+              <li><strong>Login URL:</strong> https://app.medpos.pk/login</li>
+              <li><strong>Email:</strong> ${email}</li>
+              <li><strong>Plan:</strong> ${plan}</li>
+            </ul>
+            <p>Need help? WhatsApp us or visit our knowledge base.</p>
+          `,
+        }),
+      })
+
       break
     }
 
