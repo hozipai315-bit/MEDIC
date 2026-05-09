@@ -1,0 +1,38 @@
+
+> medpos@0.1.0 start
+> next start
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 439ms
+Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+    at /app/.next/server/middleware.js:67:25
+    at iR (/app/.next/server/middleware.js:71:5330)
+    at Object.iO [as handler] (/app/.next/server/middleware.js:71:5665)
+    at /app/.next/server/middleware.js:13:25308
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14)
+    at Object.wrap (/app/.next/server/middleware.js:13:22551)
+    at /app/.next/server/middleware.js:13:25230
+    at /app/.next/server/middleware.js:13:19578
+    at i.with (/app/.next/server/middleware.js:71:19799)
+    at l.with (/app/.next/server/middleware.js:71:13999)
+Error [ERR_HTTP_HEADERS_SENT]: Cannot append headers after they are sent to the client
+    at ServerResponse.appendHeader (node:_http_outgoing:758:11)
+    at /app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:17:24730
+    at _Headers.forEach (node:internal/deps/undici/undici:4698:26)
+    at m (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:17:24712)
+    at P (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:83073)
+    at nW (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:69673)
+    at n1 (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:81756)
+    at AsyncLocalStorage.run (node:internal/async_local_storage/async_hooks:91:14)
+    at Timeout._onTimeout (/app/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:87776)
+    at listOnTimeout (node:internal/timers:585:17) {
+  code: 'ERR_HTTP_HEADERS_SENT',
+  digest: '64199912'
+}
