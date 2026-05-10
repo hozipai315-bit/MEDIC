@@ -16,7 +16,7 @@ export default async function CustomersPage() {
 
   const { data: customers } = await supabase
     .from('customers')
-    .select('*')
+    .select('*, sales(count)')
     .eq('tenant_id', profile?.tenant_id)
     .order('total_spent', { ascending: false })
 

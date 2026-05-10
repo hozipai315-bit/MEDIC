@@ -10,13 +10,15 @@ interface Customer {
   total_spent: number
   credit_balance: number
   created_at: string
+  sales?: { count: number }[]
 }
 
 function downloadCSV(customers: Customer[]) {
-  const headers = ['Name', 'Phone', 'Total Spent (Rs.)', 'Credit Balance (Rs.)', 'Customer Since']
+  const headers = ['Name', 'Phone', 'Total Purchases', 'Total Spent (Rs.)', 'Credit Balance (Rs.)', 'Customer Since']
   const rows = customers.map(c => [
     c.full_name,
     c.phone ?? '',
+    String(c.sales?.[0]?.count ?? 0),
     c.total_spent.toFixed(2),
     c.credit_balance.toFixed(2),
     new Date(c.created_at).toLocaleDateString('en-PK'),
@@ -55,6 +57,7 @@ export default function TopCustomersReport({ customers }: { customers: Customer[
               <th className="text-left px-6 py-3 text-slate-600 font-medium">#</th>
               <th className="text-left px-6 py-3 text-slate-600 font-medium">Customer</th>
               <th className="text-left px-6 py-3 text-slate-600 font-medium">Phone</th>
+              <th className="text-left px-6 py-3 text-slate-600 font-medium">Purchases</th>
               <th className="text-left px-6 py-3 text-slate-600 font-medium">Total Spent</th>
               <th className="text-left px-6 py-3 text-slate-600 font-medium">Credit Balance</th>
               <th className="text-left px-6 py-3 text-slate-600 font-medium">Customer Since</th>
@@ -77,6 +80,9 @@ export default function TopCustomersReport({ customers }: { customers: Customer[
                   </td>
                   <td className="px-6 py-3 font-medium text-slate-900">{customer.full_name}</td>
                   <td className="px-6 py-3 text-slate-600">{customer.phone ?? '—'}</td>
+                  <td className="px-6 py-3 text-slate-600">
+                    {customer.sales?.[0]?.count ?? 0} orders
+                  </td>
                   <td className="px-6 py-3 font-bold text-slate-900">
                     Rs. {customer.total_spent.toLocaleString('en-PK', { minimumFractionDigits: 2 })}
                   </td>
