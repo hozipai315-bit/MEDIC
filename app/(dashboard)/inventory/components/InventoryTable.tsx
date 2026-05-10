@@ -8,6 +8,7 @@ import { Plus, Search, Download, Pencil, ArrowUpDown } from 'lucide-react'
 import AddMedicineModal from './AddMedicineModal'
 import EditMedicineModal from './EditMedicineModal'
 import StockAdjustmentModal from './StockAdjustmentModal'
+import BulkPriceUpdateModal from './BulkPriceUpdateModal'
 
 interface Medicine {
   name: string
@@ -95,6 +96,7 @@ export default function InventoryTable({
   const [showAddModal, setShowAddModal] = useState(false)
   const [editItem, setEditItem] = useState<InventoryItem | null>(null)
   const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null)
+  const [showBulkPrice, setShowBulkPrice] = useState(false)
 
   const canEdit = ['owner', 'admin', 'pharmacist'].includes(userRole)
 
@@ -162,6 +164,12 @@ export default function InventoryTable({
           <Download className="h-4 w-4 mr-2" />
           CSV Export
         </Button>
+
+        {canEdit && (
+          <Button variant="outline" onClick={() => setShowBulkPrice(true)}>
+            Bulk Price Update
+          </Button>
+        )}
 
         {canEdit && (
           <Button onClick={() => setShowAddModal(true)}>
@@ -271,6 +279,13 @@ export default function InventoryTable({
       )}
       {adjustItem && (
         <StockAdjustmentModal item={adjustItem} onClose={() => setAdjustItem(null)} />
+      )}
+      {showBulkPrice && (
+        <BulkPriceUpdateModal
+          categories={categories.filter(c => c !== 'all')}
+          tenantId={tenantId}
+          onClose={() => setShowBulkPrice(false)}
+        />
       )}
     </div>
   )
