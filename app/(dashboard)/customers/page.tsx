@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import CustomersTable from './components/CustomersTable'
+import TopCustomersReport from './components/TopCustomersReport'
 
 export default async function CustomersPage() {
   const supabase = await createClient()
@@ -29,6 +30,7 @@ export default async function CustomersPage() {
         customers={customers ?? []}
         userRole={profile?.role ?? 'cashier'}
       />
+      <TopCustomersReport customers={customers ?? []} />
     </div>
   )
 }
