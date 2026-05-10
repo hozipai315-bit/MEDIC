@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import InventoryTable from './components/InventoryTable'
+import ExpiryWidget from './components/ExpiryWidget'
 
 export default async function InventoryPage() {
   const supabase = await createClient()
@@ -12,6 +13,18 @@ export default async function InventoryPage() {
     .select('tenant_id, role')
     .eq('id', user.id)
     .single()
+
+  // Expiry widget data — FR-INV-006
+  const ninetyDaysFromNow = new Date()
+  ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90)
+
+  const { data: expiringItems } = await supabase
+    .from('store_medicines')
+    .select('id, batch_number, expiry_date, stock_qty, medicines(name, strength)')
+    .eq('tenant_id', profile?.tenant_id)
+    .lte('expiry_date', ninetyDaysFromNow.toISOString())
+    .gt('stock_qty', 0)
+    .order('expiry_date', { ascending: true })
 
   const { data: inventory } = await supabase
     .from('store_medicines')
@@ -39,6 +52,10 @@ export default async function InventoryPage() {
           <p className="text-slate-500 mt-1">Apni store ki medicines manage karein</p>
         </div>
       </div>
+      <ExpiryWidget
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        items={(expiringItems as any) ?? []}
+      />
       <InventoryTable
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         inventory={(inventory as any) ?? []}
