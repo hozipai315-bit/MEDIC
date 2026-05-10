@@ -67,6 +67,25 @@ export async function createSale(params: CreateSaleParams) {
 
   if (itemsError) return { error: itemsError.message }
 
+  // Auto-update customer total_spent
+  if (params.customerId) {
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('total_spent')
+      .eq('id', params.customerId)
+      .single()
+
+    if (customer) {
+      await supabase
+        .from('customers')
+        .update({
+          total_spent: customer.total_spent + params.total,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', params.customerId)
+    }
+  }
+
   // Deduct stock for each item
   for (const item of params.cartItems) {
     const { data: current } = await supabase
