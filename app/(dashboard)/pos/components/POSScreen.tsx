@@ -47,6 +47,7 @@ export default function POSScreen({
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'easypaisa' | 'jazzcash'>('cash')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [gstRate, setGstRate] = useState(0) // FR-POS-006 — 0% default
 
   const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat')
   const [showInvoice, setShowInvoice] = useState(false)
@@ -152,18 +153,28 @@ export default function POSScreen({
     setCart(cart.filter(item => item.inventoryId !== id))
   }
 
+  // FR-POS-004 — Price Override
+  function overridePrice(id: string, newPrice: number) {
+    setCart(cart.map(item =>
+      item.inventoryId === id
+        ? { ...item, unitPrice: newPrice, totalPrice: newPrice * item.quantity }
+        : item
+    ))
+  }
+
   const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
   const discountAmount = discountType === 'percentage'
     ? (subtotal * discount) / 100
     : discount
-  const total = Math.max(0, subtotal - discountAmount)
+  const taxAmount = ((subtotal - discountAmount) * gstRate) / 100
+  const total = Math.max(0, subtotal - discountAmount + taxAmount)
   const changeAmount = Math.max(0, cashReceived - total)
 
   async function handleCheckout() {
     if (cart.length === 0) return
     setLoading(true)
     setError(null)
-    const result = await createSale({
+      const result = await createSale({
       tenantId,
       userId,
       customerId: selectedCustomer?.id,
@@ -172,7 +183,8 @@ export default function POSScreen({
       discount: discountAmount,
       total,
       paymentMethod,
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
     if (result.error) {
       setError(result.error)
     } else {
@@ -257,6 +269,8 @@ export default function POSScreen({
                 onIncrease={increaseQty}
                 onDecrease={decreaseQty}
                 onRemove={removeFromCart}
+                onPriceOverride={overridePrice}
+                canOverridePrice={true}
               />
             ))
           )}
@@ -337,6 +351,23 @@ export default function POSScreen({
               <span>- Rs. {discountAmount.toFixed(2)}</span>
             </div>
           )}
+          <div className="flex justify-between items-center text-slate-600">
+            <span>GST %</span>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              value={gstRate}
+              onChange={(e) => setGstRate(parseFloat(e.target.value) || 0)}
+              className="w-20 h-7 text-right text-sm"
+            />
+          </div>
+          {taxAmount > 0 && (
+            <div className="flex justify-between text-slate-600 text-sm">
+              <span>GST Amount</span>
+              <span>+ Rs. {taxAmount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-slate-900 text-base">
             <span>Total</span>
             <span>Rs. {total.toFixed(2)}</span>
@@ -405,6 +436,8 @@ export default function POSScreen({
             cashierName={cashierName}
             storeName="MedPOS Store"
             onClose={() => setShowInvoice(false)}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            {...({ tax: taxAmount, gstRate } as any)}
           />
         )}
       </div>
