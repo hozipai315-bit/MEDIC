@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import InventoryTable from './components/InventoryTable'
-import ExpiryWidget from './components/ExpiryWidget'
+import InventoryTable, { InventoryItem } from './components/InventoryTable'
+import ExpiryWidget, { ExpiringItem } from './components/ExpiryWidget'
 
 export default async function InventoryPage() {
   const supabase = await createClient()
@@ -53,12 +53,10 @@ export default async function InventoryPage() {
         </div>
       </div>
       <ExpiryWidget
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items={(expiringItems as any) ?? []}
+        items={expiringItems as unknown as ExpiringItem[] ?? []}
       />
       <InventoryTable
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        inventory={(inventory as any) ?? []}
+        inventory={inventory as unknown as InventoryItem[] ?? []}
         tenantId={profile?.tenant_id ?? ''}
         userRole={profile?.role ?? 'cashier'}
       />

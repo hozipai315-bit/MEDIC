@@ -25,6 +25,39 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const path = request.nextUrl.pathname
+  const exemptRoutes = ['/login', '/signup', '/forgot-password', '/suspended', '/billing', '/', '/pricing']
+  const isExempt = exemptRoutes.includes(path) || path.startsWith('/api/')
+
+  if (isExempt) {
+    return supabaseResponse
+  }
+
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('status')
+    .eq('id', profile?.tenant_id)
+    .single()
+
+  if (tenant?.status === 'suspended') {
+    return NextResponse.redirect(new URL('/suspended', request.url))
+  }
+
+  if (tenant?.status === 'expired') {
+    return NextResponse.redirect(new URL('/billing', request.url))
+  }
+
   return supabaseResponse
 }

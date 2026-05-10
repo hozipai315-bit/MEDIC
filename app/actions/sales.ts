@@ -18,6 +18,7 @@ interface CreateSaleParams {
   cartItems: CartItem[]
   subtotal: number
   discount: number
+  tax: number
   total: number
   paymentMethod: 'cash' | 'card' | 'easypaisa' | 'jazzcash'
   notes?: string
@@ -39,7 +40,7 @@ export async function createSale(params: CreateSaleParams) {
       invoice_number: invoiceNumber,
       subtotal: params.subtotal,
       discount: params.discount,
-      tax: 0,
+      tax: params.tax,
       total: params.total,
       payment_method: params.paymentMethod,
       status: 'completed',

@@ -83,8 +83,7 @@ export default function POSScreen({
       .eq('tenant_id', tenantId)
       .ilike('medicines.name', `%${query}%`)
       .limit(8)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setSearchResults((data as any) ?? [])
+    setSearchResults((data as unknown as Medicine[]) ?? [])
   }, [tenantId])
 
   async function searchCustomers(query: string) {
@@ -174,17 +173,17 @@ export default function POSScreen({
     if (cart.length === 0) return
     setLoading(true)
     setError(null)
-      const result = await createSale({
+    const result = await createSale({
       tenantId,
       userId,
       customerId: selectedCustomer?.id,
       cartItems: cart,
       subtotal,
       discount: discountAmount,
+      tax: taxAmount,
       total,
       paymentMethod,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+    })
     if (result.error) {
       setError(result.error)
     } else {
@@ -431,13 +430,13 @@ export default function POSScreen({
             cartItems={lastInvoiceData.cartItems}
             subtotal={lastInvoiceData.subtotal}
             discount={lastInvoiceData.discount}
+            tax={taxAmount}
+            gstRate={gstRate}
             total={lastInvoiceData.total}
             paymentMethod={lastInvoiceData.paymentMethod}
             cashierName={cashierName}
             storeName="MedPOS Store"
             onClose={() => setShowInvoice(false)}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            {...({ tax: taxAmount, gstRate } as any)}
           />
         )}
       </div>

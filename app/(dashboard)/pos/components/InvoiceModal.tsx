@@ -18,6 +18,8 @@ interface InvoiceModalProps {
   cartItems: CartItem[]
   subtotal: number
   discount: number
+  tax?: number
+  gstRate?: number
   total: number
   paymentMethod: string
   cashierName: string
@@ -30,6 +32,8 @@ export default function InvoiceModal({
   cartItems,
   subtotal,
   discount,
+  tax,
+  gstRate,
   total,
   paymentMethod,
   cashierName,
@@ -137,6 +141,12 @@ export default function InvoiceModal({
               <div className="flex justify-between text-green-600">
                 <span>Discount</span>
                 <span>- Rs. {discount.toFixed(2)}</span>
+              </div>
+            )}
+            {tax !== undefined && tax > 0 && (
+              <div className="flex justify-between text-slate-500">
+                <span>GST ({gstRate}%)</span>
+                <span>+ Rs. {tax.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-base border-t border-slate-200 pt-1">

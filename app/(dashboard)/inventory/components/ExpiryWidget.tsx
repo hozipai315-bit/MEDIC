@@ -31,6 +31,8 @@ const FILTERS = [
   { label: '90 Days', days: 90 },
 ]
 
+export type { ExpiringItem }
+
 export default function ExpiryWidget({ items }: { items: ExpiringItem[] }) {
   const router = useRouter()
   const [filter, setFilter] = useState(90)

@@ -80,6 +80,8 @@ function downloadCSV(inventory: InventoryItem[]) {
 
 const ITEMS_PER_PAGE = 50
 
+export type { InventoryItem }
+
 export default function InventoryTable({
   inventory,
   tenantId,
