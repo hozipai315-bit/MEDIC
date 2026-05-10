@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Search, ShoppingCart } from 'lucide-react'
 import CartItem from './CartItem'
+import InvoiceModal from './InvoiceModal'
 
 interface Medicine {
   id: string
@@ -45,8 +46,19 @@ export default function POSScreen({
   const [discount, setDiscount] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'easypaisa' | 'jazzcash'>('cash')
   const [loading, setLoading] = useState(false)
-  const [successInvoice, setSuccessInvoice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [discountType, setDiscountType] = useState<'flat' | 'percentage'>('flat')
+  const [showInvoice, setShowInvoice] = useState(false)
+  const [lastInvoiceData, setLastInvoiceData] = useState<{
+    invoiceNumber: string
+    cartItems: typeof cart
+    subtotal: number
+    discount: number
+    total: number
+    paymentMethod: string
+  } | null>(null)
+  const [cashReceived, setCashReceived] = useState(0)
 
   const searchMedicines = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -124,28 +136,40 @@ export default function POSScreen({
   }
 
   const subtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
-  const total = Math.max(0, subtotal - discount)
+  const discountAmount = discountType === 'percentage'
+    ? (subtotal * discount) / 100
+    : discount
+  const total = Math.max(0, subtotal - discountAmount)
+  const changeAmount = Math.max(0, cashReceived - total)
 
   async function handleCheckout() {
     if (cart.length === 0) return
     setLoading(true)
     setError(null)
-    setSuccessInvoice(null)
     const result = await createSale({
       tenantId,
       userId,
       cartItems: cart,
       subtotal,
-      discount,
+      discount: discountAmount,
       total,
       paymentMethod,
     })
     if (result.error) {
       setError(result.error)
     } else {
-      setSuccessInvoice(result.invoiceNumber ?? null)
+      setLastInvoiceData({
+        invoiceNumber: result.invoiceNumber!,
+        cartItems: [...cart],
+        subtotal,
+        discount: discountAmount,
+        total,
+        paymentMethod,
+      })
+      setShowInvoice(true)
       setCart([])
       setDiscount(0)
+      setCashReceived(0)
     }
     setLoading(false)
   }
@@ -227,15 +251,29 @@ export default function POSScreen({
             <span>Rs. {subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center text-slate-600">
-            <span>Discount (Rs.)</span>
-            <Input
-              type="number"
-              min="0"
-              value={discount}
-              onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              className="w-24 h-7 text-right text-sm"
-            />
+            <span>Discount</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDiscountType(discountType === 'flat' ? 'percentage' : 'flat')}
+                className="text-xs bg-slate-100 px-2 py-1 rounded"
+              >
+                {discountType === 'flat' ? 'Rs.' : '%'}
+              </button>
+              <Input
+                type="number"
+                min="0"
+                value={discount}
+                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                className="w-20 h-7 text-right text-sm"
+              />
+            </div>
           </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-green-600 text-sm">
+              <span>Discount Amount</span>
+              <span>- Rs. {discountAmount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-slate-900 text-base">
             <span>Total</span>
             <span>Rs. {total.toFixed(2)}</span>
@@ -259,20 +297,32 @@ export default function POSScreen({
           ))}
         </div>
 
-        {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-        {successInvoice && (
-          <div className="mb-4 text-center">
-            <button
-              onClick={() => window.print()}
-              className="text-green-600 underline text-sm font-medium"
-            >
-              ✅ Sale complete! Invoice: {successInvoice} — Print karein
-            </button>
+        {paymentMethod === 'cash' && (
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-slate-600 text-sm">
+              <span>Cash Received</span>
+              <Input
+                type="number"
+                min="0"
+                value={cashReceived || ''}
+                onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
+                className="w-24 h-7 text-right text-sm"
+                placeholder="0"
+              />
+            </div>
+            {cashReceived >= total && total > 0 && (
+              <div className="flex justify-between font-medium text-green-600 text-sm">
+                <span>Change</span>
+                <span>Rs. {changeAmount.toFixed(2)}</span>
+              </div>
+            )}
           </div>
         )}
 
+        {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
+
         <Button
-          className="w-full"
+          className="w-full mt-4"
           disabled={cart.length === 0 || loading}
           onClick={handleCheckout}
         >
@@ -280,6 +330,20 @@ export default function POSScreen({
         </Button>
 
         <p className="text-xs text-slate-400 text-center mt-2">Cashier: {cashierName}</p>
+
+        {showInvoice && lastInvoiceData && (
+          <InvoiceModal
+            invoiceNumber={lastInvoiceData.invoiceNumber}
+            cartItems={lastInvoiceData.cartItems}
+            subtotal={lastInvoiceData.subtotal}
+            discount={lastInvoiceData.discount}
+            total={lastInvoiceData.total}
+            paymentMethod={lastInvoiceData.paymentMethod}
+            cashierName={cashierName}
+            storeName="MedPOS Store"
+            onClose={() => setShowInvoice(false)}
+          />
+        )}
       </div>
     </div>
   )
