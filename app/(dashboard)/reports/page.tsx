@@ -6,6 +6,9 @@ import MedicineSalesTable from './components/MedicineSalesTable'
 import ExpiryReport from './components/ExpiryReport'
 import LowStockReport from './components/LowStockReport'
 import ExportButtons from './components/ExportButtons'
+import WeeklySalesChart from './components/WeeklySalesChart'
+import MonthlySalesChart from './components/MonthlySalesChart'
+import ProfitLossCards from './components/ProfitLossCards'
 
 export default async function ReportsPage() {
   const supabase = await createClient()
@@ -98,6 +101,56 @@ export default async function ReportsPage() {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 20)
 
+  // Weekly data — last 7 days
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return d
+  })
+  const weeklyData = last7Days.map(date => {
+    const daySales = (sales ?? []).filter(s => {
+      const saleDate = new Date(s.created_at)
+      return saleDate.toDateString() === date.toDateString()
+    })
+    const revenue = daySales.reduce((sum, s) => sum + s.total, 0)
+    const avgSaleValue = daySales.length > 0 ? revenue / daySales.length : 0
+    return {
+      day: days[date.getDay()],
+      revenue: parseFloat(revenue.toFixed(2)),
+      avgSaleValue: parseFloat(avgSaleValue.toFixed(2)),
+    }
+  })
+
+  // Monthly data — week by week this month
+  const monthlyData = [1, 2, 3, 4].map(week => {
+    const weekSales = (sales ?? []).filter(s => {
+      const day = new Date(s.created_at).getDate()
+      return day >= (week - 1) * 7 + 1 && day <= week * 7
+    })
+    const revenue = weekSales.reduce((sum, s) => sum + s.total, 0)
+    const prevWeekSales = (sales ?? []).filter(s => {
+      const day = new Date(s.created_at).getDate()
+      return day >= (week - 2) * 7 + 1 && day <= (week - 1) * 7
+    })
+    const prevRevenue = prevWeekSales.reduce((sum, s) => sum + s.total, 0)
+    const growth = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0
+    return {
+      week: `Week ${week}`,
+      revenue: parseFloat(revenue.toFixed(2)),
+      growth: parseFloat(growth.toFixed(1)),
+    }
+  })
+
+  // Profit & Loss
+  const totalRevenue30 = (sales ?? []).reduce((sum, s) => sum + s.total, 0)
+  const cogs = (saleItems ?? []).reduce((sum, item) => {
+    return sum + (item.qty * item.unit_price * 0.7)
+  }, 0)
+  const grossProfit = totalRevenue30 - cogs
+  const grossMargin = totalRevenue30 > 0 ? (grossProfit / totalRevenue30) * 100 : 0
+  const netProfit = grossProfit - (totalRevenue30 * 0.05)
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -120,6 +173,21 @@ export default async function ReportsPage() {
 
       <div className="mt-8">
         <SalesChart chartData={chartData} />
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <WeeklySalesChart data={weeklyData} />
+        <MonthlySalesChart data={monthlyData} />
+      </div>
+
+      <div className="mt-8">
+        <ProfitLossCards
+          revenue={totalRevenue30}
+          cogs={cogs}
+          grossProfit={grossProfit}
+          netProfit={netProfit}
+          grossMargin={grossMargin}
+        />
       </div>
 
       <div className="mt-8">
