@@ -113,3 +113,21 @@ export async function exportInventoryCSV(tenantId: string) {
 
   return { data: data ?? [] }
 }
+
+export async function markAsDisposed(ids: string[]) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase
+    .from('store_medicines')
+    .update({
+      stock_qty: 0,
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', ids)
+
+  if (error) return { error: error.message }
+  revalidatePath('/inventory')
+  return { success: true }
+}
