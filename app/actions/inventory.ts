@@ -23,6 +23,44 @@ export async function editMedicine(id: string, formData: FormData) {
   return { success: true }
 }
 
+export async function bulkPriceUpdate(
+  tenantId: string,
+  category: string,
+  updateType: 'percentage' | 'flat',
+  value: number
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  // Get all medicines in category for this tenant
+  const { data: items } = await supabase
+    .from('store_medicines')
+    .select('id, sale_price, medicines!inner(category)')
+    .eq('tenant_id', tenantId)
+    .eq('medicines.category', category)
+
+  if (!items || items.length === 0) return { error: 'Is category mein koi medicine nahi' }
+
+  // Update each item
+  for (const item of items) {
+    const newPrice = updateType === 'percentage'
+      ? item.sale_price * (1 + value / 100)
+      : item.sale_price + value
+
+    await supabase
+      .from('store_medicines')
+      .update({
+        sale_price: parseFloat(Math.max(0, newPrice).toFixed(2)),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', item.id)
+  }
+
+  revalidatePath('/inventory')
+  return { success: true, updatedCount: items.length }
+}
+
 export async function adjustStock(id: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
