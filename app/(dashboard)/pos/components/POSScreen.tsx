@@ -60,6 +60,10 @@ export default function POSScreen({
   } | null>(null)
   const [cashReceived, setCashReceived] = useState(0)
 
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerResults, setCustomerResults] = useState<{id: string, full_name: string, phone: string | null, credit_balance: number}[]>([])
+  const [selectedCustomer, setSelectedCustomer] = useState<{id: string, full_name: string, phone: string | null, credit_balance: number} | null>(null)
+
   const searchMedicines = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSearchResults([])
@@ -81,6 +85,19 @@ export default function POSScreen({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setSearchResults((data as any) ?? [])
   }, [tenantId])
+
+  async function searchCustomers(query: string) {
+    setCustomerSearch(query)
+    if (query.length < 2) { setCustomerResults([]); return }
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('customers')
+      .select('id, full_name, phone, credit_balance')
+      .eq('tenant_id', tenantId)
+      .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%`)
+      .limit(5)
+    setCustomerResults(data ?? [])
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => searchMedicines(search), 300)
@@ -149,6 +166,7 @@ export default function POSScreen({
     const result = await createSale({
       tenantId,
       userId,
+      customerId: selectedCustomer?.id,
       cartItems: cart,
       subtotal,
       discount: discountAmount,
@@ -170,6 +188,8 @@ export default function POSScreen({
       setCart([])
       setDiscount(0)
       setCashReceived(0)
+      setSelectedCustomer(null)
+      setCustomerSearch('')
     }
     setLoading(false)
   }
@@ -239,6 +259,49 @@ export default function POSScreen({
                 onRemove={removeFromCart}
               />
             ))
+          )}
+        </div>
+
+        {/* Customer Attach — FR-POS-010 */}
+        <div className="mb-3">
+          <p className="text-xs text-slate-500 mb-1">Customer (Optional)</p>
+          {selectedCustomer ? (
+            <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-blue-900">{selectedCustomer.full_name}</p>
+                <p className="text-xs text-blue-500">{selectedCustomer.phone} • Credit: Rs. {selectedCustomer.credit_balance}</p>
+              </div>
+              <button
+                onClick={() => { setSelectedCustomer(null); setCustomerSearch('') }}
+                className="text-xs text-blue-400 hover:text-blue-600"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <Input
+                placeholder="Customer search karein..."
+                value={customerSearch}
+                onChange={(e) => searchCustomers(e.target.value)}
+                className="text-sm h-8"
+              />
+              {customerResults.length > 0 && (
+                <div className="absolute z-10 w-full bg-white border border-slate-200 rounded-lg mt-1 shadow-lg">
+                  {customerResults.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-slate-50 text-sm border-b border-slate-100 last:border-0"
+                      onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); setCustomerResults([]) }}
+                    >
+                      <p className="font-medium">{c.full_name}</p>
+                      <p className="text-xs text-slate-400">{c.phone}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
